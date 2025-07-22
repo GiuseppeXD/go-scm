@@ -298,6 +298,9 @@ func convertFromHookEvents(from scm.HookEvents) []string {
 	if from.PullRequestComment {
 		events = append(events, "pull_request_review_comment")
 	}
+	if from.PullRequestReview {
+		events = append(events, "pull_request_review")
+	}
 	if from.Issue {
 		events = append(events, "issues")
 	}

@@ -68,6 +68,7 @@ type (
 		Pipeline           bool
 		PullRequest        bool
 		PullRequestComment bool
+		PullRequestReview  bool
 		Push               bool
 		ReviewComment      bool
 		Tag                bool
