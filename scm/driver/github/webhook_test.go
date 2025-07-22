@@ -175,6 +175,18 @@ func TestWebhooks(t *testing.T) {
 		},
 
 		//
+		// pull request review events
+		//
+
+		// pull request review submitted
+		{
+			event:  "pull_request_review",
+			before: "testdata/webhooks/pr_review_submitted.json",
+			after:  "testdata/webhooks/pr_review_submitted.json.golden",
+			obj:    new(scm.PullRequestReviewHook),
+		},
+
+		//
 		// deployment
 		//
 

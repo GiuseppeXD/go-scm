@@ -42,7 +42,8 @@ func (s *webhookService) Parse(req *http.Request, fn scm.SecretFunc) (scm.Webhoo
 		hook, err = s.parsePullRequestHook(data)
 	case "deployment":
 		hook, err = s.parseDeploymentHook(data)
-	// case "pull_request_review_comment":
+	case "pull_request_review":
+		hook, err = s.parsePullRequestReviewHook(data)
 	// case "issues":
 	case "issue_comment":
 		hook, err = s.parseIssueCommentHook(data)
@@ -191,6 +192,26 @@ func (s *webhookService) parsePipelineHook(data []byte) (scm.Webhook, error) {
 		return nil, err
 	}
 	dst, err := convertPipelineHook(src), nil
+	return dst, nil
+}
+
+func (s *webhookService) parsePullRequestReviewHook(data []byte) (scm.Webhook, error) {
+	src := new(pullRequestReviewHook)
+	err := json.Unmarshal(data, src)
+	if err != nil {
+		return nil, err
+	}
+	dst := convertPullRequestReviewHook(src)
+	switch src.Action {
+	case "submitted":
+		dst.Action = scm.ActionCreate
+	case "edited":
+		dst.Action = scm.ActionUpdate
+	case "dismissed":
+		dst.Action = scm.ActionDelete
+	default:
+		dst.Action = scm.ActionUnknown
+	}
 	return dst, nil
 }
 
@@ -353,6 +374,22 @@ type (
 	pullRequestHook struct {
 		Action      string     `json:"action"`
 		Number      int        `json:"number"`
+		PullRequest pr         `json:"pull_request"`
+		Repository  repository `json:"repository"`
+		Sender      user       `json:"sender"`
+	}
+
+	pullRequestReviewHook struct {
+		Action      string `json:"action"`
+		Review      struct {
+			ID          int       `json:"id"`
+			User        user      `json:"user"`
+			Body        string    `json:"body"`
+			CommitID    string    `json:"commit_id"`
+			SubmittedAt time.Time `json:"submitted_at"`
+			State       string    `json:"state"`
+			HTMLURL     string    `json:"html_url"`
+		} `json:"review"`
 		PullRequest pr         `json:"pull_request"`
 		Repository  repository `json:"repository"`
 		Sender      user       `json:"sender"`
@@ -711,6 +748,32 @@ func convertReleaseHook(src *releaseHook) *scm.ReleaseHook {
 		Sender: *convertUser(&src.Sender),
 	}
 	return dst
+}
+
+func convertPullRequestReviewHook(src *pullRequestReviewHook) *scm.PullRequestReviewHook {
+	return &scm.PullRequestReviewHook{
+		Repo: scm.Repository{
+			ID:         fmt.Sprint(src.Repository.ID),
+			Namespace:  src.Repository.Owner.Login,
+			Name:       src.Repository.Name,
+			Branch:     src.Repository.DefaultBranch,
+			Private:    src.Repository.Private,
+			Visibility: scm.ConvertVisibility(src.Repository.Visibility),
+			Clone:      src.Repository.CloneURL,
+			CloneSSH:   src.Repository.SSHURL,
+			Link:       src.Repository.HTMLURL,
+		},
+		PullRequest: *convertPullRequest(&src.PullRequest),
+		Review: scm.Review{
+			ID:      src.Review.ID,
+			Body:    src.Review.Body,
+			Sha:     src.Review.CommitID,
+			Link:    src.Review.HTMLURL,
+			Author:  *convertUser(&src.Review.User),
+			Created: src.Review.SubmittedAt,
+		},
+		Sender: *convertUser(&src.Sender),
+	}
 }
 
 // regexp help determine if the named git object is a tag.

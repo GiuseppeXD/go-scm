@@ -110,6 +110,16 @@ type (
 		Review      Review
 	}
 
+	// PullRequestReviewHook represents a pull request review
+	// event, eg pull_request_review.
+	PullRequestReviewHook struct {
+		Action      Action
+		Repo        Repository
+		PullRequest PullRequest
+		Review      Review
+		Sender      User
+	}
+
 	// DeployHook represents a deployment event. This is
 	// currently a GitHub-specific event type.
 	DeployHook struct {
@@ -158,5 +168,6 @@ func (h *IssueCommentHook) Repository() Repository       { return h.Repo }
 func (h *PullRequestHook) Repository() Repository        { return h.Repo }
 func (h *PullRequestCommentHook) Repository() Repository { return h.Repo }
 func (h *ReviewCommentHook) Repository() Repository      { return h.Repo }
+func (h *PullRequestReviewHook) Repository() Repository  { return h.Repo }
 func (h *ReleaseHook) Repository() Repository            { return h.Repo }
 func (h *PipelineHook) Repository() Repository           { return h.Repo }
